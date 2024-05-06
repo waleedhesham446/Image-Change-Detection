@@ -5,11 +5,11 @@
   "num_workers": 8,
   "num_channel": 3,
   "EF": false,
-  "epochs": 100,
-  "batch_size": 16,
+  "epochs": 50,
+  "batch_size": 4,
   "learning_rate": 1e-3,
   "loss_function": "hybrid",
-  "dataset_dir": "/content/drive/MyDrive/SI-Project/ChangeDetectionDataset/Real/subset/",
+  "dataset_dir": "../../trainval/",
   "weight_dir": "./outputs/",
   "log_dir": "./log/"
 }
