@@ -30,14 +30,6 @@ class FocalLoss(nn.Module):
 
         return loss.mean()
 
-class CrossEntropyLoss(nn.Module):
-    def __init__(self):
-        super(CrossEntropyLoss, self).__init__()
-
-    def forward(self, input, target):
-        loss = F.cross_entropy(input, target)
-        return loss
-
 def dice_loss(logits, true, eps=1e-7):
     """Computes the Sørensen–Dice loss.
     Note that PyTorch optimizers minimize a loss. In this
