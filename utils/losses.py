@@ -1,9 +1,7 @@
-from utils.args import parse_args
 import torch
 import torch.utils.data
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -34,26 +32,25 @@ class FocalLoss(nn.Module):
 
 # Define the dice loss function
 def dice_loss(logits, true, eps=1e-7):
-    
+    # Determine the number of classes
     num_classes = logits.shape[1]
-    if num_classes == 1:
-        true_one_hot = torch.eye(num_classes + 1)[true.squeeze(1)]
-        true_one_hot = true_one_hot.permute(0, 3, 1, 2).float()
-        true_one_hot_f = true_one_hot[:, 0:1, :, :]
-        true_one_hot_s = true_one_hot[:, 1:2, :, :]
-        true_one_hot = torch.cat([true_one_hot_s, true_one_hot_f], dim=1)
-        pos_prob = torch.sigmoid(logits)
-        neg_prob = 1 - pos_prob
-        probas = torch.cat([pos_prob, neg_prob], dim=1)
-    else:
-        true_one_hot = torch.eye(num_classes, device=true.device)[true.squeeze(1)]
-        true_one_hot = true_one_hot.permute(0, 3, 1, 2).float()
-        probas = F.softmax(logits, dim=1)
+    
+    # Create one-hot encoded tensors and softmax probabilities
+    true_one_hot = torch.eye(num_classes, device=true.device)[true.squeeze(1)]
+    true_one_hot = true_one_hot.permute(0, 3, 1, 2).float()
+    probabilities = F.softmax(logits, dim=1)
+    
+    # Ensure the true_one_hot tensor type matches logits
     true_one_hot = true_one_hot.type(logits.type())
+    
+    # Calculate intersection and cardinality
     dims = (0,) + tuple(range(2, true.ndimension()))
-    intersection = torch.sum(probas * true_one_hot, dims)
-    cardinality = torch.sum(probas + true_one_hot, dims)
+    intersection = torch.sum(probabilities * true_one_hot, dims)
+    cardinality = torch.sum(probabilities + true_one_hot, dims)
+    
+    # Calculate Dice loss
     dice_loss = (2. * intersection / (cardinality + eps)).mean()
+    
     return (1 - dice_loss)
 
 # Hybrid loss function that incorporates both cross-entropy and dice loss

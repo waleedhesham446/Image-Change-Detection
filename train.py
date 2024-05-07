@@ -110,9 +110,7 @@ if __name__ == '__main__':
             del batch_img1, batch_img2, labels
 
         scheduler.step()
-        print(f'Epoch{epoch} training finished. Loss: {mean_train_metrics["losses"]}, Precision: {mean_train_metrics["precisions"]}, \
-            Recall: {mean_train_metrics["recalls"]}, F1: {mean_train_metrics["f1scores"]}, \ 
-            Learning Rate: {mean_train_metrics["learning_rate"]}')
+        print(f'Epoch{epoch} training finished. {mean_train_metrics}')
 
         # Evaluationq
         model.eval()
@@ -156,9 +154,7 @@ if __name__ == '__main__':
                 # clear batch variables from memory
                 del batch_img1, batch_img2, labels
 
-            print(f'Epoch{epoch} validation finished. Loss: {mean_val_metrics["losses"]}, Precision: {mean_val_metrics["precisions"]}, \
-            Recall: {mean_val_metrics["recalls"]}, F1: {mean_val_metrics["f1scores"]}, \ 
-            Learning Rate: {mean_val_metrics["learning_rate"]}')
+            print(f'Epoch{epoch} validation finished. {mean_val_metrics}')
             
             # If this epoch is better than the previous best, save the model and log
             if ((mean_val_metrics['precisions'] > best_metrics['precisions'])
