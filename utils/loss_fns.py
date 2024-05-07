@@ -57,7 +57,7 @@ def dice_loss(logits, true, eps=1e-7):
 def jaccard_loss(logits, true, eps=1e-7):
     num_classes = logits.shape[1]
     
-    true_one_hot = torch.eye(num_classes)[true.squeeze(1)]
+    true_one_hot = torch.eye(num_classes, device=true.device)[true.squeeze(1)]
     true_one_hot = true_one_hot.permute(0, 3, 1, 2).float()
     probabilities = F.softmax(logits, dim=1)
     
@@ -84,8 +84,9 @@ def hybrid_loss(predictions, target):
     for prediction in predictions:
 
         bce = focal(prediction, target) # get cross-entropy loss -> More Stable
-        dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
-        loss += bce + dice # hybrid loss is the sum of the two losses
+        # dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
+        jaccard = jaccard_loss(prediction, target)
+        loss += bce + jaccard # hybrid loss is the sum of the two losses
 
     return loss # return the hybrid loss
 
