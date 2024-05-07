@@ -53,6 +53,28 @@ def dice_loss(logits, true, eps=1e-7):
     
     return (1 - dice_loss)
 
+# Define the Jaccard loss function
+def jaccard_loss(logits, true, eps=1e-7):
+    num_classes = logits.shape[1]
+    
+    true_one_hot = torch.eye(num_classes)[true.squeeze(1)]
+    true_one_hot = true_one_hot.permute(0, 3, 1, 2).float()
+    probabilities = F.softmax(logits, dim=1)
+    
+    
+    true_one_hot = true_one_hot.type(logits.type())
+    
+    dims = (0,) + tuple(range(2, true.ndimension()))
+    intersection = torch.sum(probabilities * true_one_hot, dims)
+    cardinality = torch.sum(probabilities + true_one_hot, dims)
+    union = cardinality - intersection
+    jacc_loss = (intersection / (union + eps)).mean()
+    
+    return (1 - jacc_loss)
+
+
+
+
 # Hybrid loss function that incorporates both cross-entropy and dice loss
 def hybrid_loss(predictions, target):
     # Compute loss
@@ -61,8 +83,8 @@ def hybrid_loss(predictions, target):
     focal = FocalLoss(gamma=0, alpha=None)
     for prediction in predictions:
 
-        bce = focal(prediction, target) # get cross-entropy loss
-        dice = dice_loss(prediction, target) # get dice loss
+        bce = focal(prediction, target) # get cross-entropy loss -> More Stable
+        dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
         loss += bce + dice # hybrid loss is the sum of the two losses
 
     return loss # return the hybrid loss

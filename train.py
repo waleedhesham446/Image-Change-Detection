@@ -3,7 +3,7 @@ from sklearn.metrics import precision_recall_fscore_support as prfs
 from utils.args import parse_args
 from utils.utilities import (get_loaders)
 from models.Siam_Ecam import Siam_Ecam # Model
-from utils.losses import hybrid_loss # Loss function
+from utils.loss_fns import hybrid_loss # Loss function
 import os
 import json
 from tqdm import tqdm
