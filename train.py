@@ -1,7 +1,7 @@
 import torch
 from sklearn.metrics import precision_recall_fscore_support as prfs
-from utils.parser import get_parser_with_args
-from utils.helpers import (get_loaders)
+from utils.args import parse_args
+from utils.utilities import (get_loaders)
 from models.Siam_Ecam import Siam_Ecam # Model
 from utils.losses import hybrid_loss # Loss function
 import os
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     """
     Initialize Parser and define arguments
     """
-    parser, metadata = get_parser_with_args()
+    parser, metadata = parse_args()
     opt = parser.parse_args()
 
 
@@ -40,31 +40,30 @@ if __name__ == '__main__':
     # Load Model, define loss function and optimizer
     model = Siam_Ecam(3, 2).to(dev)
 
-    criterion = hybrid_loss
     optimizer = torch.optim.AdamW(model.parameters(), lr=opt.learning_rate) # Be careful when you adjust learning rate, you can refer to the linear scaling rule
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.5)
 
     # Initilization
-    best_metrics = {'cd_f1scores': -1, 'cd_recalls': -1, 'cd_precisions': -1}
-    total_step = -1
+    best_metrics = {'f1scores': -1, 'recalls': -1, 'precisions': -1}
+    
 
     for epoch in range(opt.epochs):
-        train_metrics = {'cd_losses': [], 'cd_corrects': [], 'cd_precisions': [],
-                        'cd_recalls': [], 'cd_f1scores': [], 'learning_rate': [],
-                        }
-        val_metrics = {'cd_losses': [], 'cd_corrects': [], 'cd_precisions': [],
-                        'cd_recalls': [], 'cd_f1scores': [], 'learning_rate': [],
-                        }
+        train_metrics = {'losses': [], 'corrects': [], 'precisions': [],
+                        'recalls': [], 'f1scores': [], 'learning_rate': [],
+                        } # Metrics for training
+        val_metrics = {'losses': [], 'corrects': [], 'precisions': [],
+                        'recalls': [], 'f1scores': [], 'learning_rate': [],
+                        } # Metrics for validation
 
         # Training
         model.train()
-        batch_iter = 0
+        batch_iter = 0 # Batch Start
         tbar = tqdm(train_loader)
         for batch_img1, batch_img2, labels in tbar:
             tbar.set_description("epoch {} info ".format(epoch) + str(batch_iter) + " - " + str(batch_iter+opt.batch_size))
-            batch_iter = batch_iter+opt.batch_size
-            total_step += 1
-            # Set variables for training
+            batch_iter = batch_iter+opt.batch_size # Update batch start
+            
+            # Get images and labels
             batch_img1 = batch_img1.float().to(dev)
             batch_img2 = batch_img2.float().to(dev)
             labels = labels.long().to(dev)
@@ -73,33 +72,33 @@ if __name__ == '__main__':
             optimizer.zero_grad()
 
             # Get model predictions, calculate loss, backprop
-            cd_preds = model(batch_img1, batch_img2)
+            preds = model(batch_img1, batch_img2)
 
-            cd_loss = criterion(cd_preds, labels)
-            loss = cd_loss
-            loss.backward()
-            optimizer.step()
+            loss = hybrid_loss(preds, labels) # Loss function
+            loss = loss
+            loss.backward() # Backpropagation
+            optimizer.step() # Update the weights
 
-            cd_preds = cd_preds[-1]
-            _, cd_preds = torch.max(cd_preds, 1)
+            preds = preds[-1]
+            _, preds = torch.max(preds, 1)
 
-            # Calculate and log other batch metrics
-            cd_corrects = (100 *
-                        (cd_preds.squeeze().byte() == labels.squeeze().byte()).sum() /
+            # Calculate batch metrics
+            corrects = (100 *
+                        (preds.squeeze().byte() == labels.squeeze().byte()).sum() /
                         (labels.size()[0] * (opt.patch_size**2)))
 
-            cd_train_report = prfs(labels.data.cpu().numpy().flatten(),
-                                cd_preds.data.cpu().numpy().flatten(),
+            train_report = prfs(labels.data.cpu().numpy().flatten(),
+                                preds.data.cpu().numpy().flatten(),
                                 average='binary',
                                 zero_division=0,
                                 pos_label=1)
             
             # Assign Metrics of current batch to the epoch metrics
-            train_metrics['cd_losses'].append(cd_loss.item())
-            train_metrics['cd_corrects'].append(cd_corrects.item())
-            train_metrics['cd_precisions'].append(cd_train_report[0])
-            train_metrics['cd_recalls'].append(cd_train_report[1])
-            train_metrics['cd_f1scores'].append(cd_train_report[2])
+            train_metrics['losses'].append(loss.item())
+            train_metrics['corrects'].append(corrects.item())
+            train_metrics['precisions'].append(train_report[0])
+            train_metrics['recalls'].append(train_report[1])
+            train_metrics['f1scores'].append(train_report[2])
             train_metrics['learning_rate'].append(scheduler.get_last_lr())
 
             
@@ -111,6 +110,9 @@ if __name__ == '__main__':
             del batch_img1, batch_img2, labels
 
         scheduler.step()
+        print(f'Epoch{epoch} training finished. Loss: {mean_train_metrics["losses"]}, Precision: {mean_train_metrics["precisions"]}, \
+            Recall: {mean_train_metrics["recalls"]}, F1: {mean_train_metrics["f1scores"]}, \ 
+            Learning Rate: {mean_train_metrics["learning_rate"]}')
 
         # Evaluationq
         model.eval()
@@ -122,30 +124,30 @@ if __name__ == '__main__':
                 labels = labels.long().to(dev)
 
                 # Get predictions and calculate loss
-                cd_preds = model(batch_img1, batch_img2)
+                preds = model(batch_img1, batch_img2)
 
-                cd_loss = criterion(cd_preds, labels)
+                loss = hybrid_loss(preds, labels) # Loss function
 
-                cd_preds = cd_preds[-1]
-                _, cd_preds = torch.max(cd_preds, 1)
+                preds = preds[-1]
+                _, preds = torch.max(preds, 1)
 
                 # Calculate and log other batch metrics
-                cd_corrects = (100 *
-                            (cd_preds.squeeze().byte() == labels.squeeze().byte()).sum() /
+                corrects = (100 *
+                            (preds.squeeze().byte() == labels.squeeze().byte()).sum() /
                             (labels.size()[0] * (opt.patch_size**2)))
 
-                cd_val_report = prfs(labels.data.cpu().numpy().flatten(),
-                                    cd_preds.data.cpu().numpy().flatten(),
+                val_report = prfs(labels.data.cpu().numpy().flatten(),
+                                    preds.data.cpu().numpy().flatten(),
                                     average='binary',
                                     zero_division=0,
                                     pos_label=1)
                 
                 # Assign Metrics of current batch to the epoch metrics
-                val_metrics['cd_losses'].append(cd_loss.item())
-                val_metrics['cd_corrects'].append(cd_corrects.item())
-                val_metrics['cd_precisions'].append(cd_val_report[0])
-                val_metrics['cd_recalls'].append(cd_val_report[1])
-                val_metrics['cd_f1scores'].append(cd_val_report[2])
+                val_metrics['losses'].append(loss.item())
+                val_metrics['corrects'].append(corrects.item())
+                val_metrics['precisions'].append(val_report[0])
+                val_metrics['recalls'].append(val_report[1])
+                val_metrics['f1scores'].append(val_report[2])
                 val_metrics['learning_rate'].append(scheduler.get_last_lr())
 
                 # log the batch mean metrics
@@ -154,26 +156,28 @@ if __name__ == '__main__':
                 # clear batch variables from memory
                 del batch_img1, batch_img2, labels
 
-
+            print(f'Epoch{epoch} validation finished. Loss: {mean_val_metrics["losses"]}, Precision: {mean_val_metrics["precisions"]}, \
+            Recall: {mean_val_metrics["recalls"]}, F1: {mean_val_metrics["f1scores"]}, \ 
+            Learning Rate: {mean_val_metrics["learning_rate"]}')
+            
             # If this epoch is better than the previous best, save the model and log
-            if ((mean_val_metrics['cd_precisions'] > best_metrics['cd_precisions'])
+            if ((mean_val_metrics['precisions'] > best_metrics['precisions'])
                     or
-                    (mean_val_metrics['cd_recalls'] > best_metrics['cd_recalls'])
+                    (mean_val_metrics['recalls'] > best_metrics['recalls'])
                     or
-                    (mean_val_metrics['cd_f1scores'] > best_metrics['cd_f1scores'])):
+                    (mean_val_metrics['f1scores'] > best_metrics['f1scores'])):
 
                 # Insert training and epoch information to metadata dictionary
                 metadata['validation_metrics'] = mean_val_metrics
 
                 # Save model and log
-                if not os.path.exists('./tmp'):
-                    os.mkdir('./tmp')
-                with open('./tmp/metadata_epoch_' + str(epoch) + '.json', 'w') as fout:
+                if not os.path.exists('./checkpoints'):
+                    os.mkdir('./checkpoints')
+                with open('./checkpoints/metadata_epoch_' + str(epoch) + '.json', 'w') as fout:
                     json.dump(metadata, fout)
 
-                torch.save(model, './tmp/checkpoint_epoch_'+str(epoch)+'.pt')
+                torch.save(model, './checkpoints/checkpoint_epoch_'+str(epoch)+'.pt')
 
-                # comet.log_asset(upload_metadata_file_path)
                 best_metrics = mean_val_metrics
 
 

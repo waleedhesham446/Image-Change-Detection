@@ -1,4 +1,4 @@
-from utils.parser import get_parser_with_args
+from utils.args import parse_args
 import torch
 import torch.utils.data
 import torch.nn as nn
@@ -8,9 +8,11 @@ import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
+# Define the focal loss function (Used here for cross-entropy loss -> gamma=0, alpha=None)
 class FocalLoss(nn.Module):
     def __init__(self, gamma=0, alpha=None):
         super(FocalLoss, self).__init__()
+        # These arguments are just to make the loss function more flexible (not necessary for this task)
         self.gamma = gamma
         self.alpha = alpha
         if isinstance(alpha, (float, int)):
@@ -22,27 +24,17 @@ class FocalLoss(nn.Module):
         if input.dim() > 2:
             input = input.view(input.size(0), input.size(1), -1).transpose(1, 2).contiguous().view(-1, input.size(1))
 
-        target = target.view(-1, 1)
-        prob = F.log_softmax(input)
-        prob = prob.gather(1, target).view(-1)
+        target = target.view(-1, 1) # Flatten the target
+        prob = F.log_softmax(input) # Apply log-softmax to the input
+        prob = prob.gather(1, target).view(-1) # Get the probabilities of the target class
 
-        loss = -prob
+        loss = -prob # Calculate the loss
 
-        return loss.mean()
+        return loss.mean() # Return the mean loss
 
+# Define the dice loss function
 def dice_loss(logits, true, eps=1e-7):
-    """Computes the Sørensen–Dice loss.
-    Note that PyTorch optimizers minimize a loss. In this
-    case, we would like to maximize the dice loss so we
-    return the negated dice loss.
-    Args:
-        true: a tensor of shape [B, 1, H, W].
-        logits: a tensor of shape [B, C, H, W]. Corresponds to
-            the raw output or logits of the model.
-        eps: added to the denominator for numerical stability.
-    Returns:
-        dice_loss: the Sørensen–Dice loss.
-    """
+    
     num_classes = logits.shape[1]
     if num_classes == 1:
         true_one_hot = torch.eye(num_classes + 1)[true.squeeze(1)]
@@ -64,20 +56,17 @@ def dice_loss(logits, true, eps=1e-7):
     dice_loss = (2. * intersection / (cardinality + eps)).mean()
     return (1 - dice_loss)
 
-parser, metadata = get_parser_with_args()
-opt = parser.parse_args()
-
+# Hybrid loss function that incorporates both cross-entropy and dice loss
 def hybrid_loss(predictions, target):
-    """Calculating the loss"""
+    # Compute loss
     loss = 0
 
-    # gamma=0, alpha=None --> CE
     focal = FocalLoss(gamma=0, alpha=None)
     for prediction in predictions:
 
-        bce = focal(prediction, target)
-        dice = dice_loss(prediction, target)
-        loss += bce + dice
+        bce = focal(prediction, target) # get cross-entropy loss
+        dice = dice_loss(prediction, target) # get dice loss
+        loss += bce + dice # hybrid loss is the sum of the two losses
 
-    return loss
+    return loss # return the hybrid loss
 
