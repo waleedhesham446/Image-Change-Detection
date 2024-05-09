@@ -68,9 +68,9 @@ def jaccard_loss(logits, true, eps=1e-7):
     intersection = torch.sum(probabilities * true_one_hot, dims)
     cardinality = torch.sum(probabilities + true_one_hot, dims)
     union = cardinality - intersection
-    jacc_loss = (intersection / (union + eps)).mean()
+    jaccard_index = (intersection / (union + eps)).mean()
     
-    return (1 - jacc_loss)
+    return (1 - jaccard_index)
 
 
 
@@ -79,6 +79,7 @@ def jaccard_loss(logits, true, eps=1e-7):
 def hybrid_loss(predictions, target):
     # Compute loss
     loss = 0
+    iou = 0
 
     focal = FocalLoss(gamma=0, alpha=None)
     for prediction in predictions:
@@ -87,6 +88,7 @@ def hybrid_loss(predictions, target):
         # dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
         jaccard = jaccard_loss(prediction, target)
         loss += bce + jaccard # hybrid loss is the sum of the two losses
-
-    return loss # return the hybrid loss
+        iou += jaccard
+        
+    return loss, iou # return the hybrid loss
 

@@ -8,3 +8,4 @@ def parse_args(metadata_json='metadata.json'):
         metadata = json.load(fin)
         parser.set_defaults(**metadata)
         return parser, metadata
+

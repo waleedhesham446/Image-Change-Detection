@@ -20,7 +20,7 @@ if __name__ == '__main__':
                     image.startswith('.')] # Get the test image paths (Used for saving the output images)
     test_img_paths.sort() # Sort the image paths
 
-    path = './tmp/checkpoint_epoch_24.pt'   # the path of the model
+    path = './checkpoints/checkpoint_epoch_17.pt'   # the path of the model
     model = torch.load(path) # Load the model
     
     model.eval()

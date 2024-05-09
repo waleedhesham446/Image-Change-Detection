@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     test_loader = get_test_loaders(opt)
 
-    path = './checkpoints/checkpoint_epoch_0.pt'   # the path of the model
+    path = './checkpoints/checkpoint_epoch_17.pt'   # the path of the model
     model = torch.load(path)
 
     c_matrix = {'tn': 0, 'fp': 0, 'fn': 0, 'tp': 0}
