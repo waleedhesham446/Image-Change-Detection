@@ -170,19 +170,19 @@ if __name__ == '__main__':
             if (mean_val_metrics['losses'] < best_metrics['losses'] 
                  or mean_val_metrics['jaccard'] < best_metrics['jaccard']):
 
-                # Insert training and epoch information to metadata dictionary
-                metadata['steps'] = steps
-                metadata['validation_metrics'] = mean_val_metrics
-
-                # Save model and log
-                if not os.path.exists('./checkpoints'):
-                    os.mkdir('./checkpoints')
-                with open('./checkpoints/metadata_epoch_' + str(epoch) + '.json', 'w') as fout:
-                    json.dump(metadata, fout)
-
-                torch.save(model, './checkpoints/checkpoint_epoch_'+str(epoch)+'.pt')
-
                 best_metrics = mean_val_metrics
+            # Insert training and epoch information to metadata dictionary
+            metadata['steps'] = steps
+            metadata['validation_metrics'] = mean_val_metrics
+
+            # Save model and log
+            if not os.path.exists('./checkpoints'):
+                os.mkdir('./checkpoints')
+            with open('./checkpoints/metadata_epoch_' + str(epoch) + '.json', 'w') as fout:
+                json.dump(metadata, fout)
+
+            torch.save(model, './checkpoints/checkpoint_epoch_'+str(epoch)+'.pt')
+
 
 
             print('An epoch finished.')
