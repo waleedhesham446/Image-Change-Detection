@@ -10,16 +10,16 @@ class convolution_block(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, intermediate_channels, kernel_size = kernel_size, padding = padding, bias = True)
         self.conv2 = nn.Conv2d(intermediate_channels, out_channels,  kernel_size = kernel_size, padding = padding, bias = True)
         self.activation = nn.ReLU(inplace = True)
-        self.batch_norm1 = nn.BatchNorm2d(intermediate_channels)
-        self.batch_norm2 = nn.BatchNorm2d(out_channels)
+        # self.batch_norm1 = nn.BatchNorm2d(intermediate_channels)
+        # self.batch_norm2 = nn.BatchNorm2d(out_channels)
         
     def forward(self, x):
         x = self.conv1(x)
         conv1_x = x # For skip connection
-        x = self.batch_norm1(x)
+        # x = self.batch_norm1(x)
         x = self.activation(x)
         x = self.conv2(x)
-        x = self.batch_norm2(x)
+        # x = self.batch_norm2(x)
         x = self.activation(x + conv1_x) # From Skip connection
         return x
         
