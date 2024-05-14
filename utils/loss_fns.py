@@ -75,6 +75,11 @@ def jaccard_loss(logits, true, eps=1e-7):
 
 
 def jaccard_loss_2(img1, img2):
+    if img1.is_cuda:
+        img1 = img1.cpu()
+    if img2.is_cuda:
+        img2 = img2.cpu()
+    
     intersection = np.logical_and(img1, img2).sum()
     union = np.logical_or(img1, img2).sum()
     
