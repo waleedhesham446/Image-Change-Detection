@@ -93,7 +93,7 @@ def hybrid_loss(predictions, target):
     loss = 0
     iou = 0
 
-    print(predictions.shape, target.shape)
+    print(len(predictions), len(target))
     print(predictions[0].shape, target[0].shape)
     focal = FocalLoss(gamma=0, alpha=None)
     for prediction in predictions:
