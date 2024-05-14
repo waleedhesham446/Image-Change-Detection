@@ -3,6 +3,7 @@ import torch.utils.data
 import torch.nn as nn
 import torch.nn.functional as F
 import warnings
+import numpy as np
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -73,7 +74,18 @@ def jaccard_loss(logits, true, eps=1e-7):
     return (1 - jaccard_index)
 
 
-
+def jaccard_loss_2(img1, img2):
+    intersection = np.logical_and(img1, img2).sum()
+    union = np.logical_or(img1, img2).sum()
+    
+    if union != 0:
+        jaccard_index = intersection / union
+    else:
+        jaccard_index = 1
+    
+    jaccard_loss = 1 - jaccard_index
+    
+    return jaccard_loss
 
 # Hybrid loss function that incorporates both cross-entropy and dice loss
 def hybrid_loss(predictions, target):
@@ -81,13 +93,16 @@ def hybrid_loss(predictions, target):
     loss = 0
     iou = 0
 
+    print(predictions.shape, target.shape)
+    print(predictions[0].shape, target[0].shape)
     focal = FocalLoss(gamma=0, alpha=None)
     for prediction in predictions:
 
         bce = focal(prediction, target) # get cross-entropy loss -> More Stable
-        # dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
-        jaccard = jaccard_loss(prediction, target)
-        loss += bce + jaccard # hybrid loss is the sum of the two losses
+        dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
+        loss += bce + dice # hybrid loss is the sum of the two losses
+        
+        jaccard = jaccard_loss_2(prediction, target)
         iou += jaccard
         
     return loss, iou # return the hybrid loss
