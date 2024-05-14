@@ -22,9 +22,13 @@ class FocalLoss(nn.Module):
         if input.dim() > 2:
             input = input.view(input.size(0), input.size(1), -1).transpose(1, 2).contiguous().view(-1, input.size(1))
 
-        target = target.view(-1, 1) # Flatten the target
-        prob = F.log_softmax(input) # Apply log-softmax to the input
-        prob = prob.gather(1, target).view(-1) # Get the probabilities of the target class
+        # target = target.view(-1, 1) # Flatten the target
+        # prob = F.log_softmax(input) # Apply log-softmax to the input
+        # prob = prob.gather(1, target).view(-1) # Get the probabilities of the target class
+
+        target = target.view(-1)  # Flatten the target to match input
+        prob = F.log_softmax(input, dim=1)  # Apply log-softmax to the input
+        prob = prob.gather(1, target.view(-1, 1)).view(-1)
 
         loss = -prob # Calculate the loss
 
