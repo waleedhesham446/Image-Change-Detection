@@ -107,7 +107,7 @@ def hybrid_loss(predictions, target):
         dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
         loss += bce + dice # hybrid loss is the sum of the two losses
         
-        jaccard = jaccard_loss_2(prediction, target)
+        jaccard = jaccard_loss(prediction, target)
         iou += jaccard
         
     return loss, iou # return the hybrid loss
