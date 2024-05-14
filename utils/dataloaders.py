@@ -87,7 +87,7 @@ def images_loader(img_path, label_path, aug):
     # else:
     #     sample = ag.test_transforms(sample) # Convert the images to tensors (no augmentation) -> Testing and Validation
     
-    sample = ag.test_transforms(sample)
+    sample = ag.train_transforms(sample)
 
     return sample['image'][0], sample['image'][1], sample['label']
 
