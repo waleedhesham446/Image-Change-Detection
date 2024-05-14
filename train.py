@@ -38,8 +38,12 @@ if __name__ == '__main__':
     train_loader, val_loader = get_loaders(opt)
 
     # Load Model, define loss function and optimizer
-    model = Siam_Ecam(3, 2).to(dev)
-    # model = torch.load('./checkpoints/checkpoint_epoch_16.pt').to(dev)
+    if opt.load_model:
+        model = torch.load(opt.load_model).to(dev)
+        print('Model loaded from: ', opt.load_model)
+    else:
+        model = Siam_Ecam(3, 2).to(dev)
+        print('Model initialized from scratch')
 
     # Load from checkpoint or original
     optimizer = torch.optim.AdamW(model.parameters(), lr=getattr(opt, "validation_metrics", {}).get("learning_rate", opt.learning_rate)) 
@@ -176,12 +180,12 @@ if __name__ == '__main__':
             metadata['validation_metrics'] = mean_val_metrics
 
             # Save model and log
-            if not os.path.exists('./checkpoints'):
-                os.mkdir('./checkpoints')
-            with open('./checkpoints/metadata_epoch_' + str(epoch) + '.json', 'w') as fout:
+            if not os.path.exists(f'./{opt.weight_dir}'):
+                os.mkdir(f'./{opt.weight_dir}')
+            with open(f'./{opt.weight_dir}/metadata_epoch_' + str(epoch) + '.json', 'w') as fout:
                 json.dump(metadata, fout)
 
-            torch.save(model, './checkpoints/checkpoint_epoch_'+str(epoch)+'.pt')
+            torch.save(model, f'./{opt.weight_dir}/checkpoint_epoch_'+str(epoch)+'.pt')
 
 
 
