@@ -82,10 +82,10 @@ def images_loader(img_path, label_path, aug):
     label = Image.open(label_path) # Access label images
     sample = {'image': (img1, img2), 'label': label} # Store the images and labels in a dictionary
 
-    # if aug: 
-    #     sample = ag.train_transforms(sample) # Apply the training augnentations
-    # else:
-    #     sample = ag.test_transforms(sample) # Convert the images to tensors (no augmentation) -> Testing and Validation
+    if aug: 
+        sample = ag.train_transforms(sample) # Apply the training augnentations
+    else:
+        sample = ag.test_transforms(sample) # Convert the images to tensors (no augmentation) -> Testing and Validation
 
     return sample['image'][0], sample['image'][1], sample['label']
 
