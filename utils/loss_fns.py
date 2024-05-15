@@ -104,8 +104,9 @@ def hybrid_loss(predictions, target):
     for prediction in predictions:
 
         bce = focal(prediction, target) # get cross-entropy loss -> More Stable
-        dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
-        loss += bce + dice # hybrid loss is the sum of the two losses
+        # dice = dice_loss(prediction, target) # get dice loss -> Can handle class imbalance
+        jaccard_lss = jaccard_loss(prediction, target)
+        loss += bce + jaccard_lss # hybrid loss is the sum of the two losses
         
         jaccard = jaccard_loss(prediction, target)
         iou += jaccard
